@@ -14,12 +14,12 @@ bool is_imm64(const struct bpf_insn *insn)
 			return true;
 		break;
 	case BPF_ALU:
+	case BPF_ALU64:
 	case BPF_JMP:
 		break;
 
 		/* Classes not implemented. */
 	case BPF_RET:
-	case BPF_MISC:
 	default:
 		fprintf(stderr, "Error: class %d not implemented\n", bpf_class);
 		return -1;
