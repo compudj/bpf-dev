@@ -17,6 +17,16 @@ void clear_regs(__s64 *reg, int nr_regs)
 		reg[i] = 0;
 }
 
+static
+void show_regs(__s64 *reg, int nr_regs)
+{
+	int i;
+
+	for (i = 0; i < nr_regs; i++) {
+		printf("r%d: %lld\n", i, reg[i]);
+	}
+}
+
 int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 {
 	__s64 reg[MAX_BPF_REG];
@@ -747,5 +757,6 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			return -1;
 		}
 	}
+	show_regs(reg, MAX_BPF_REG);
 	return 0;
 }
