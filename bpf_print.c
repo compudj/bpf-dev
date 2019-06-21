@@ -32,9 +32,11 @@ int print_class(const struct bpf_insn *insn)
 	case BPF_JMP:
 		printf("class=JMP");
 		break;
+	case BPF_JMP32:
+		printf("class=JMP32");
+		break;
 
 		/* Classes not implemented. */
-	case BPF_RET:
 	default:
 		fprintf(stderr, "Error: class %d not implemented\n", bpf_class);
 		return -1;
@@ -172,6 +174,12 @@ int print_alu_op(const struct bpf_insn *insn)
 	case BPF_XOR:
 		printf("op=xor");
 		break;
+	case BPF_MOV:
+		printf("op=mov");
+		break;
+	case BPF_ARSH:
+		printf("op=arsh");
+		break;
 
 		/* Unsupported alu ops. */
 	default:
@@ -192,7 +200,8 @@ int print_alu_op(const struct bpf_insn *insn)
 	case BPF_RSH:
 	case BPF_MOD:
 	case BPF_XOR:
-		printf(",");
+	case BPF_MOV:
+	case BPF_ARSH:
 		printf("dst_reg=");
 		if (print_reg(insn->dst_reg))
 			return -1;
@@ -213,7 +222,6 @@ int print_alu_op(const struct bpf_insn *insn)
 		break;
 
 	case BPF_NEG:
-		printf(",");
 		printf("dst_reg=");
 		if (print_reg(insn->dst_reg))
 			return -1;
@@ -248,6 +256,27 @@ int print_jmp_op(const struct bpf_insn *insn)
 	case BPF_JSET:
 		printf("op=jset");
 		break;
+	case BPF_JNE:
+		printf("op=jne");
+		break;
+	case BPF_JLT:
+		printf("op=jlt");
+		break;
+	case BPF_JLE:
+		printf("op=jle");
+		break;
+	case BPF_JSGT:
+		printf("op=jsgt");
+		break;
+	case BPF_JSGE:
+		printf("op=jsge");
+		break;
+	case BPF_JSLT:
+		printf("op=jslt");
+		break;
+	case BPF_JSLE:
+		printf("op=jsle");
+		break;
 
 		/* Unsupported jmp ops. */
 	default:
@@ -255,8 +284,47 @@ int print_jmp_op(const struct bpf_insn *insn)
 		return -1;
 	}
 
-	//TODO: print rest of jump stuff.
+	printf(",");
 
+	switch (bpf_op) {
+	case BPF_JA:
+		printf("off=%d", insn->off);
+		break;
+	case BPF_JEQ:
+	case BPF_JGT:
+	case BPF_JGE:
+	case BPF_JSET:
+	case BPF_JNE:
+	case BPF_JLT:
+	case BPF_JLE:
+	case BPF_JSGT:
+	case BPF_JSGE:
+	case BPF_JSLT:
+	case BPF_JSLE:
+		printf("off=%d,dst_reg=", insn->off);
+		if (print_reg(insn->dst_reg))
+			return -1;
+		printf(",");
+		switch (BPF_SRC(insn->code)) {
+		case BPF_K:
+			printf("imm=%d", insn->imm);
+			break;
+		case BPF_X:
+			printf("src_reg=");
+			if (print_reg(insn->src_reg))
+				return -1;
+			break;
+		default:
+			fprintf(stderr, "Error: unsupported src %u\n",
+				BPF_SRC(insn->code));
+		}
+		break;
+
+		/* Unsupported jmp ops. */
+	default:
+		fprintf(stderr, "Error: unsupported jmp op %u\n", bpf_op);
+		return -1;
+	}
 	return 0;
 }
 
@@ -296,13 +364,13 @@ int print_insn(const struct bpf_insn *insn)
 			return -1;
 		break;
 	case BPF_JMP:
+	case BPF_JMP32:
 		printf(",");
 		if (print_jmp_op(insn))
 			return -1;
 		break;
 
 		/* Classes not implemented. */
-	case BPF_RET:
 	default:
 		fprintf(stderr, "Error: class %d not implemented\n", bpf_class);
 		return -1;
