@@ -11,7 +11,6 @@
 		{						\
 			.code = BPF_LD | BPF_DW | BPF_IMM,	\
 			.dst_reg = (reg),			\
-			.src_reg = 0,				\
 			.off = 0,				\
 			.imm = (__u32) (v),			\
 		},						\
@@ -42,7 +41,7 @@ int do_test(void)
 			.code = BPF_JMP | BPF_JGT | BPF_X,
 			.dst_reg = BPF_REG_1,
 			.src_reg = BPF_REG_0,
-			.off = 0,	/* Jump to self (infinite loop). */
+			.off = -1,
 		},
 	};
 	if (validate_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
@@ -51,6 +50,10 @@ int do_test(void)
 	}
 	if (print_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
 		fprintf(stderr, "Error printing bytecode\n");
+		return -1;
+	}
+	if (interpret_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
+		fprintf(stderr, "Error interpreting bytecode\n");
 		return -1;
 	}
 	return 0;

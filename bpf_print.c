@@ -111,6 +111,9 @@ int print_mode(const struct bpf_insn *insn)
 	case BPF_MEM:
 		printf("mode=mem");
 		break;
+	case BPF_MEM_ACQ_REL:
+		printf("mode=mem-acq-rel");
+		break;
 
 		/* Modes not implemented. */
 	case BPF_ABS:
@@ -338,8 +341,46 @@ int print_insn(const struct bpf_insn *insn)
 
 	switch (bpf_class) {
 	case BPF_LD:
+		printf(",");
+		if (print_size(insn))
+			return -1;
+		printf(",");
+		if (print_mode(insn))
+			return -1;
+		printf(",");
+		printf("dst_reg=");
+		if (print_reg(insn->dst_reg))
+			return -1;
+		break;
 	case BPF_LDX:
+		printf(",");
+		if (print_size(insn))
+			return -1;
+		printf(",");
+		if (print_mode(insn))
+			return -1;
+		printf(",");
+		printf("dst_reg=");
+		if (print_reg(insn->dst_reg))
+			return -1;
+		printf(",");
+		printf("src_reg=");
+		if (print_reg(insn->src_reg))
+			return -1;
+		printf(",off=%d", (int) insn->off);
 	case BPF_ST:
+		printf(",");
+		if (print_size(insn))
+			return -1;
+		printf(",");
+		if (print_mode(insn))
+			return -1;
+		printf(",");
+		printf("dst_reg=");
+		if (print_reg(insn->dst_reg))
+			return -1;
+		printf(",off=%d", (int) insn->off);
+		break;
 	case BPF_STX:
 		printf(",");
 		if (print_size(insn))

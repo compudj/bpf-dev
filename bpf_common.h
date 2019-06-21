@@ -26,6 +26,7 @@
 #define		BPF_MEM		0x60
 #define		BPF_LEN		0x80
 #define		BPF_MSH		0xa0
+#define		BPF_MEM_ACQ_REL	0xe0
 
 /* alu/jmp fields */
 #define BPF_OP(code)    ((code) & 0xf0)
