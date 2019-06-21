@@ -18,10 +18,11 @@ void clear_regs(__s64 *reg, int nr_regs)
 }
 
 static
-void show_regs(__s64 *reg, int nr_regs)
+void show_regs(size_t pc, __s64 *reg, int nr_regs)
 {
 	int i;
 
+	printf("pc: %zu\n", pc);
 	for (i = 0; i < nr_regs; i++) {
 		printf("r%d: %lld\n", i, reg[i]);
 	}
@@ -31,6 +32,7 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 {
 	__s64 reg[MAX_BPF_REG];
 	size_t pc = 0, nr_interpreted_insn = 0;
+	int ret = 0;
 
 	clear_regs(reg, MAX_BPF_REG);
 
@@ -44,13 +46,15 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		if (pc > len) {
 			fprintf(stderr, "Error: pc (%zu) overflows bytecode length (%zu)\n",
 				pc, len);
-			return -1;
+			ret = -1;
+			goto end;
 
 		}
 		if (nr_interpreted_insn++ >= MAX_NR_INTERPRETED_INSN) {
 			fprintf(stderr, "Error: Reached maximum number of interpreted insn (%d)\n",
 				MAX_NR_INTERPRETED_INSN);
-			return -1;
+			ret = -1;
+			goto end;
 		}
 
 		switch (insn->code) {
@@ -241,7 +245,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU | BPF_DIV | BPF_K:
 			if (!insn->imm) {
 				fprintf(stderr, "error: Divide by 0\n");
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] /= insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -250,7 +255,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU | BPF_DIV | BPF_X:
 			if (!reg[insn->src_reg]) {
 				fprintf(stderr, "Error: Divide by 0\n");
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] /= reg[insn->src_reg];
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -280,7 +286,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Left shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] << insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -290,7 +297,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Left shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] << reg[insn->src_reg];
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -300,7 +308,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Right shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] >> insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -310,7 +319,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Right shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] >> reg[insn->src_reg];
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -324,7 +334,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU | BPF_MOD | BPF_K:
 			if (insn->imm <= 0) {
 				fprintf(stderr, "Error: Modulo by %d\n", insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] %= insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -333,7 +344,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU | BPF_MOD | BPF_X:
 			if (reg[insn->src_reg] <= 0) {
 				fprintf(stderr, "Error: Modulo by %lld\n", reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] %= insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -362,7 +374,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Right shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = reg[insn->dst_reg] >> insn->imm;
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -372,7 +385,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Right shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = reg[insn->dst_reg] >> reg[insn->src_reg];
 			reg[insn->dst_reg] = (__u32) reg[insn->dst_reg];
@@ -406,7 +420,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU64 | BPF_DIV | BPF_K:
 			if (!insn->imm) {
 				fprintf(stderr, "Error: divide by 0\n");
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] /= insn->imm;
 			pc++;
@@ -414,7 +429,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU64 | BPF_DIV | BPF_X:
 			if (!reg[insn->src_reg]) {
 				fprintf(stderr, "Error: Divide by 0\n");
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] /= reg[insn->src_reg];
 			pc++;
@@ -439,7 +455,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Left shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] << insn->imm;
 			pc++;
@@ -448,7 +465,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Left shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] << reg[insn->src_reg];
 			pc++;
@@ -457,7 +475,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Right shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] >> insn->imm;
 			pc++;
@@ -466,7 +485,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Right shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = (__u64) reg[insn->dst_reg] >> reg[insn->src_reg];
 			pc++;
@@ -478,7 +498,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU64 | BPF_MOD | BPF_K:
 			if (insn->imm <= 0) {
 				fprintf(stderr, "Error: modulo by %d\n", insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] %= insn->imm;
 			pc++;
@@ -486,7 +507,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		case BPF_ALU64 | BPF_MOD | BPF_X:
 			if (reg[insn->src_reg] <= 0) {
 				fprintf(stderr, "Error: modulo by %lld\n", reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] %= insn->imm;
 			pc++;
@@ -511,7 +533,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (insn->imm >= 32 || insn->imm < 0) {
 				fprintf(stderr, "Error: Right shift by %d undefined.\n",
 					insn->imm);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = reg[insn->dst_reg] >> insn->imm;
 			pc++;
@@ -520,7 +543,8 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			if (reg[insn->src_reg] >= 32 || reg[insn->src_reg] < 0) {
 				fprintf(stderr, "Error: Right shift by %lld undefined.\n",
 					reg[insn->src_reg]);
-				return -1;
+				ret = -1;
+				goto end;
 			}
 			reg[insn->dst_reg] = reg[insn->dst_reg] >> reg[insn->src_reg];
 			pc++;
@@ -754,9 +778,11 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 		default:
 			fprintf(stderr, "Error: Unsupported insn code %d\n",
 				insn->code);
-			return -1;
+			ret = -1;
+			goto end;
 		}
 	}
-	show_regs(reg, MAX_BPF_REG);
-	return 0;
+end:
+	show_regs(pc, reg, MAX_BPF_REG);
+	return ret;
 }

@@ -90,7 +90,42 @@ int do_test(void)
 	return 0;
 }
 
+int do_loop(void)
+{
+	struct bpf_insn bytecode[] = {
+		{
+			.code = BPF_ALU | BPF_ADD | BPF_K,
+			.dst_reg = BPF_REG_0,
+			.imm = 1,
+		},
+		{
+			.code = BPF_JMP | BPF_JA,
+			.off = -2,
+		},
+	};
+	if (validate_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
+		fprintf(stderr, "Error validating bytecode\n");
+		return -1;
+	}
+	if (print_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
+		fprintf(stderr, "Error printing bytecode\n");
+		return -1;
+	}
+	/* Expect error. */
+	if (interpret_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
+		fprintf(stderr, "Error interpreting bytecode\n");
+		return -1;
+	}
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
-	return do_test();
+	if (do_test()) {
+		return -1;
+	}
+	if (do_loop() == 0) {
+		return -1;
+	}
+	return 0;
 }
