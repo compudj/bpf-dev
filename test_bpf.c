@@ -37,11 +37,21 @@ int do_test(void)
 			.dst_reg = BPF_REG_0,
 			.src_reg = BPF_REG_1,
 		},
-		{	/* Should be false. Infinite loop if bug. */
-			.code = BPF_JMP | BPF_JGT | BPF_X,
+		{
+			.code = BPF_JMP | BPF_JLT | BPF_X,
 			.dst_reg = BPF_REG_1,
 			.src_reg = BPF_REG_0,
-			.off = -1,
+			.off = 1,
+		},
+		{
+			.code = BPF_LD | BPF_W | BPF_IMM,
+			.dst_reg = BPF_REG_9,
+			.imm = 666,
+		},
+		{
+			.code = BPF_LD | BPF_W | BPF_IMM,
+			.dst_reg = BPF_REG_10,
+			.imm = 777,
 		},
 	};
 	if (validate_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
