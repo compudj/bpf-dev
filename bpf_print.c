@@ -26,13 +26,15 @@ int print_class(const struct bpf_insn *insn)
 	case BPF_ALU:
 		printf("class=ALU");
 		break;
+	case BPF_ALU64:
+		printf("class=ALU64");
+		break;
 	case BPF_JMP:
 		printf("class=JMP");
 		break;
 
 		/* Classes not implemented. */
 	case BPF_RET:
-	case BPF_MISC:
 	default:
 		fprintf(stderr, "Error: class %d not implemented\n", bpf_class);
 		return -1;
@@ -288,6 +290,7 @@ int print_insn(const struct bpf_insn *insn)
 		printf(",off=%d", (int) insn->off);
 		break;
 	case BPF_ALU:
+	case BPF_ALU64:
 		printf(",");
 		if (print_alu_op(insn))
 			return -1;
@@ -300,7 +303,6 @@ int print_insn(const struct bpf_insn *insn)
 
 		/* Classes not implemented. */
 	case BPF_RET:
-	case BPF_MISC:
 	default:
 		fprintf(stderr, "Error: class %d not implemented\n", bpf_class);
 		return -1;
