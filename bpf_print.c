@@ -84,7 +84,7 @@ int print_imm(const struct bpf_insn *insn)
 		 * We can access next insn because it has been validated
 		 * in validation pass.
 		 */
-		printf("imm=%lld", ((__u64) insn[1].imm << 32) | (__u64) insn->imm);
+		printf("imm=%lld", ((__u64) (insn + 1)->imm << 32) | (__u64) insn->imm);
 		break;
 	}
 

@@ -35,10 +35,10 @@ static
 int validate_insn(const struct bpf_insn *insn, size_t i, size_t len)
 {
 	if (is_imm64(insn) && (i + 1 == len ||
-	    insn[i + 1].code != (BPF_LD | BPF_W | BPF_IMM) ||
-	    insn[i + 1].dst_reg != BPF_REG_0 ||
-	    insn[i + 1].src_reg != BPF_REG_0 ||
-	    insn[i + 1].off != 0)) {
+	    (insn + 1)->code != (BPF_LD | BPF_W | BPF_IMM) ||
+	    (insn + 1)->dst_reg != BPF_REG_0 ||
+	    (insn + 1)->src_reg != BPF_REG_0 ||
+	    (insn + 1)->off != 0)) {
 			return -1;
 	}
 	return 0;

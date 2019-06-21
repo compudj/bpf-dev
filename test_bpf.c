@@ -30,9 +30,20 @@ int do_test(void)
 		{
 			.code = BPF_LD | BPF_W | BPF_IMM,
 			.dst_reg = BPF_REG_0,
-			.imm = 0x123,
+			.imm = 123,
 		},
 		BPF_LD_IMM64(BPF_REG_1, 4566666666999)
+		{
+			.code = BPF_ALU64 | BPF_X | BPF_ADD,
+			.dst_reg = BPF_REG_0,
+			.src_reg = BPF_REG_1,
+		},
+		{	/* Should be false. Infinite loop if bug. */
+			.code = BPF_JMP | BPF_JGT | BPF_X,
+			.dst_reg = BPF_REG_1,
+			.src_reg = BPF_REG_0,
+			.off = 0,	/* Jump to self (infinite loop). */
+		},
 	};
 	if (validate_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
 		fprintf(stderr, "Error validating bytecode\n");
