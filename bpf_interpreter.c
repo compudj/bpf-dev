@@ -60,7 +60,7 @@ int interpret_bytecode(const struct bpf_insn *bytecode, size_t len)
 			pc++;
 			break;
 		case BPF_LD | BPF_DW | BPF_IMM:
-			reg[insn->dst_reg] = ((__u64) (insn + 1)->imm << 32) | (__u64) insn->imm;
+			reg[insn->dst_reg] = ((__u64) (insn + 1)->imm << 32) | (__u32) insn->imm;
 			pc += 2;	/* Skip next insn. */
 			break;
 

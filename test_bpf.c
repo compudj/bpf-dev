@@ -19,9 +19,13 @@
 			.dst_reg = 0,				\
 			.src_reg = 0,				\
 			.off = 0,				\
-			.imm = (__u32)(((__u64) v) >> 32),	\
+			.imm = (__u32)(((__u64) (v)) >> 32),	\
 		},
 
+static
+int test_st = 0;
+static
+int test_stx = 0;
 
 int do_test(void)
 {
@@ -53,7 +57,22 @@ int do_test(void)
 			.dst_reg = BPF_REG_10,
 			.imm = 777,
 		},
+		BPF_LD_IMM64(BPF_REG_2, (unsigned long) &test_st)
+		{
+			.code = BPF_ST | BPF_W | BPF_MEM,
+			.dst_reg = BPF_REG_2,
+			.off = 0,
+			.imm = 444,
+		},
+		BPF_LD_IMM64(BPF_REG_3, (unsigned long) &test_stx)
+		{
+			.code = BPF_STX | BPF_W | BPF_MEM,
+			.dst_reg = BPF_REG_3,
+			.src_reg = BPF_REG_10,
+			.off = 0,
+		},
 	};
+
 	if (validate_bytecode(bytecode, ARRAY_SIZE(bytecode))) {
 		fprintf(stderr, "Error validating bytecode\n");
 		return -1;
@@ -66,6 +85,8 @@ int do_test(void)
 		fprintf(stderr, "Error interpreting bytecode\n");
 		return -1;
 	}
+	printf("test_st: %d\n", test_st);
+	printf("test_stx: %d\n", test_stx);
 	return 0;
 }
 
