@@ -10,7 +10,7 @@ bool is_imm64(const struct bpf_insn *insn)
 	case BPF_LDX:
 	case BPF_ST:
 	case BPF_STX:
-		if (BPF_MODE(insn->code) == BPF_IMM_X && BPF_SIZE(insn->code) == BPF_DW)
+		if (BPF_MODE(insn->code) == BPF_IMM && BPF_SIZE(insn->code) == BPF_DW)
 			return true;
 		break;
 	case BPF_ALU:
@@ -27,27 +27,32 @@ bool is_imm64(const struct bpf_insn *insn)
 	return false;
 }
 
+/*
+ * When loading a 64-bit immediate, the following instruction appears
+ * as a 32-bit immediate load.
+ */
 static
 int validate_insn(const struct bpf_insn *insn, size_t i, size_t len)
 {
-	if (is_imm64(insn) && i + 1 == len)
-		return -1;
+	if (is_imm64(insn) && (i + 1 == len ||
+	    insn[i + 1].code != (BPF_LD | BPF_W | BPF_IMM) ||
+	    insn[i + 1].dst_reg != BPF_REG_0 ||
+	    insn[i + 1].src_reg != BPF_REG_0 ||
+	    insn[i + 1].off != 0)) {
+			return -1;
+	}
 	return 0;
 }
 
-int validate_bytecode(const union bpf_dword *bytecode, size_t len)
+int validate_bytecode(const struct bpf_insn *bytecode, size_t len)
 {
 	size_t i;
 
 	for (i = 0; i < len; i++) {
-		const struct bpf_insn *insn = &bytecode[i].insn;
+		const struct bpf_insn *insn = &bytecode[i];
 
 		if (validate_insn(insn, i, len))
 			return -1;
-		/* Skip following 64-bit immediate. */
-		if (is_imm64(insn)) {
-			i++;
-		}
 	}
 	return 0;
 }

@@ -71,9 +71,4 @@ struct bpf_insn {
 	__s32	imm;		/* signed immediate constant */
 };
 
-union bpf_dword {
-	struct bpf_insn insn;
-	__s64 imm;
-};
-
 #endif /* _UAPI__LINUX_BPF_H__ */

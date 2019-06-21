@@ -76,13 +76,11 @@ int print_imm(const struct bpf_insn *insn)
 		break;
 	case BPF_DW:
 	{
-		const union bpf_dword *dword = (const union bpf_dword *) insn;
-
 		/*
-		 * We can access next dword because it has been
-		 * validated in validation pass.
+		 * We can access next insn because it has been validated
+		 * in validation pass.
 		 */
-		printf("imm=%lld", dword[1].imm);
+		printf("imm=%lld", ((__u64) insn[1].imm << 32) | (__u64) insn->imm);
 		break;
 	}
 
@@ -101,8 +99,8 @@ int print_mode(const struct bpf_insn *insn)
 	unsigned int bpf_mode = BPF_MODE(insn->code);
 
 	switch (bpf_mode) {
-	case BPF_IMM_X:
-		printf("mode=imm_x");
+	case BPF_IMM:
+		printf("mode=imm");
 		printf(",");
 		print_imm(insn);
 		break;
@@ -111,7 +109,6 @@ int print_mode(const struct bpf_insn *insn)
 		break;
 
 		/* Modes not implemented. */
-	case BPF_IMM:
 	case BPF_ABS:
 	case BPF_IND:
 	case BPF_LEN:
@@ -312,24 +309,14 @@ int print_insn(const struct bpf_insn *insn)
 	return 0;
 }
 
-static
-int print_imm64(__s64 imm)
-{
-	printf("<skip> imm64=%lld\n", imm);
-	return 0;
-}
-
-int print_bytecode(const union bpf_dword *bytecode, size_t len)
+int print_bytecode(const struct bpf_insn *bytecode, size_t len)
 {
 	size_t i;
 
 	for (i = 0; i < len; i++) {
-		const struct bpf_insn *insn = &bytecode[i].insn;
+		const struct bpf_insn *insn = &bytecode[i];
 
 		if (print_insn(insn))
-			return -1;
-		/* Skip and print following 64-bit immediate. */
-		if (is_imm64(insn) && print_imm64(bytecode[++i].imm))
 			return -1;
 	}
 	return 0;
