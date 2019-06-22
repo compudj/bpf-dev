@@ -175,13 +175,9 @@ int validate_insn(struct bpf_insn *insn, size_t i, size_t len)
 
 	case BPF_JMP | BPF_JA:
 	case BPF_JMP32 | BPF_JA:
-	{
-		__s16 off = insn->off;
-
-		if (off == -1)
-			off = -2;
+		if (insn->off == -1)
+			insn->off = -2;
 		break;
-	}
 
 	case BPF_JMP | BPF_JEQ | BPF_K:
 	case BPF_JMP | BPF_JGT | BPF_K:
@@ -205,16 +201,11 @@ int validate_insn(struct bpf_insn *insn, size_t i, size_t len)
 	case BPF_JMP32 | BPF_JSGE | BPF_K:
 	case BPF_JMP32 | BPF_JSLT | BPF_K:
 	case BPF_JMP32 | BPF_JSLE | BPF_K:
-
-	{
-		__s16 off = insn->off;
-
-		if (off == -1)
-			off = -2;
+		if (insn->off == -1)
+			insn->off = -2;
 		if (insn->dst_reg >= MAX_BPF_REG)
 			return -1;
 		break;
-	}
 
 	case BPF_JMP | BPF_JEQ | BPF_X:
 	case BPF_JMP | BPF_JGT | BPF_X:
@@ -238,17 +229,13 @@ int validate_insn(struct bpf_insn *insn, size_t i, size_t len)
 	case BPF_JMP32 | BPF_JSGE | BPF_X:
 	case BPF_JMP32 | BPF_JSLT | BPF_X:
 	case BPF_JMP32 | BPF_JSLE | BPF_X:
-	{
-		__s16 off = insn->off;
-
-		if (off == -1)
-			off = -2;
+		if (insn->off == -1)
+			insn->off = -2;
 		if (insn->dst_reg >= MAX_BPF_REG)
 			return -1;
 		if (insn->src_reg >= MAX_BPF_REG)
 			return -1;
 		break;
-	}
 
 	default:
 		fprintf(stderr, "Error: Unsupported insn code %d\n",
